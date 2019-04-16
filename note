@@ -1,0 +1,19 @@
+roscore
+rosbag play -r 0.5 onesecondpointcloud.bag 
+catkin_make --pkg my_pcl_tutorial
+rosrun my_pcl_tutorial test_2d input=/rslidar_points
+rosrun rqt-graph rqt-graph
+rviz
+
+存点云rosbag record -O out /velodyne_points  
+点云对象的成员函数有称为“is_dense()”，如果所有的点都有效的返回true是为有限值。一个NaNs表明测量传感器距离到该点的距离值是有问题的，可能是因为传感器太近或太远，或者因为表面反射。那么当存在无效点云的NaNs值作为算法的输入的时候，可能会引起很多问题，比如“"Assertion `point_representation_->isValid (point) && "Invalid (NaN, Inf) point coordinates given to radiusSearch!"' failed."”如果发生这样的错误就要移除这些点，那么下面就是为了解决移除无效点的程序
+std::vector<int> mapping;
+pcl::removeNaNFromPointCloud(*cloud, *cloud, mapping);
+
+
+
+http://blog.csdn.net/nksjc/article/details/76401092
+
+http://blog.csdn.net/littlethunder/article/details/51955849
+
+
