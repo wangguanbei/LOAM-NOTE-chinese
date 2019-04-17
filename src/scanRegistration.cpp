@@ -257,10 +257,54 @@ void laserCloudHandler(const sensor_msgs::PointCloud2ConstPtr& laserCloudMsg)
   
   PointType point;
   std::vector<pcl::PointCloud<PointType> > laserCloudScans(N_SCANS);	// 创建16个点云容器
+
+  double pitch, yaw, roll, tx, ty;
+  cv::FileStorage fs("../param.yaml", cv::FileStorage::READ);
+  if (!fs.isOpened())
+  {
+    perror("scan registration load params failed. param.yaml does not exist!!!");
+    exit(EXIT_FAILURE);
+  }
+  fs["lidar_yaw"] >> yaw;
+  fs["lidar_roll"] >> roll;
+  fs["lidar_pitch"] >> pitch;
+  fs["lidar_translation_x"] >> tx;
+  fs["lidar_translation_y"] >> ty;
+  fs.release();
+
   for (int i = 0; i < cloudSize; i++) {	// 遍历laserCloudIn点
     point.x = laserCloudIn.points[i].y;
     point.y = laserCloudIn.points[i].z;
     point.z = laserCloudIn.points[i].x; // 将ROS坐标系转化成欧拉角用坐标系，ROS是x轴向前，y轴向左，z轴向上的右手坐标系
+
+    double x = -point.x;
+    double z = point.y;
+    double y = point.z;
+    double x_temp1, y_temp1, z_temp1, x_temp2, y_temp2, z_temp2, x_temp3, y_temp3, z_temp3;
+    x_temp1 = x;
+    y_temp1 = y * cos(pitch) - z * sin(pitch);
+    z_temp1 = y * sin(pitch) + z * cos(pitch);
+
+    z_temp2 = z_temp1;
+    x_temp2 = x_temp1 * cos(yaw) - y_temp1 * sin(yaw);
+    y_temp2 = x_temp1 * sin(yaw) + y_temp1 * cos(yaw);
+
+    y_temp3 = y_temp2;
+    z_temp3 = z_temp2 * cos(roll) - x_temp2 * sin(roll);
+    x_temp3 = z_temp2 * sin(roll) + x_temp2 * cos(roll);
+
+    x_temp3 += tx;
+    y_temp3 += ty;
+
+    point.x = -x_temp3;
+    point.y = z_temp3;
+    point.z = y_temp3;
+    int row_index = 300 - (int)(y_temp3 / 0.1);
+    int col_index = 75 + (int)(x_temp3 / 0.1);
+    if (row_index >= 291 && row_index <= 317 && col_index >= 62 && col_index <= 83)
+    {
+      continue;
+    }
 
     float angle = atan(point.y / sqrt(point.x * point.x + point.z * point.z)) * 180 / M_PI; // 俯仰角，上正下负
     int scanID;
