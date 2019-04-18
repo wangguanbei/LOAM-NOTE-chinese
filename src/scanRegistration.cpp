@@ -303,6 +303,7 @@ void laserCloudHandler(const sensor_msgs::PointCloud2ConstPtr& laserCloudMsg)
     int col_index = 75 + (int)(x_temp3 / 0.1);
     if (row_index >= 291 && row_index <= 317 && col_index >= 62 && col_index <= 83)
     {
+      count--;
       continue;
     }
 
