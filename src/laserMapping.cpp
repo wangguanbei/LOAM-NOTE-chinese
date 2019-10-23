@@ -61,16 +61,16 @@ bool newLaserCloudSurfLast = false;
 bool newLaserCloudFullRes = false;
 bool newLaserOdometry = false;
 
-int laserCloudCenWidth = 10;  // 中心cube索引
+int laserCloudCenWidth = 30;  // 中心cube索引
 int laserCloudCenHeight = 5;  // 中心cube索引
-int laserCloudCenDepth = 10;  // 中心cube索引
-const int laserCloudWidth = 21;
+int laserCloudCenDepth = 30;  // 中心cube索引
+const int laserCloudWidth = 61;
 const int laserCloudHeight = 11;
-const int laserCloudDepth = 21;
+const int laserCloudDepth = 61;
 const int laserCloudNum = laserCloudWidth * laserCloudHeight * laserCloudDepth; // 点云方块集合最大数量,4851个长宽高为 cm × cm × cm 的立方体
 
-int laserCloudValidInd[125];
-int laserCloudSurroundInd[125];
+int laserCloudValidInd[1125];
+int laserCloudSurroundInd[1125];
 
 pcl::PointCloud<PointType>::Ptr laserCloudCornerLast(new pcl::PointCloud<PointType>());
 pcl::PointCloud<PointType>::Ptr laserCloudSurfLast(new pcl::PointCloud<PointType>());
@@ -642,11 +642,11 @@ int main(int argc, char **argv)
         int laserCloudValidNum = 0;
         int laserCloudSurroundNum = 0;// RS最远距离确认
         // 在每一维的中心5个cube(前2个，后2个，中间1个)里进行查找（前后250米范围内，总共500米范围），三个维度总共125个cube
-        for (int i = centerCubeI - 2; i <= centerCubeI + 2; i++)
+        for (int i = centerCubeI - 7; i <= centerCubeI + 7; i++)
         {
           for (int j = centerCubeJ - 2; j <= centerCubeJ + 2; j++)
           {
-            for (int k = centerCubeK - 2; k <= centerCubeK + 2; k++)
+            for (int k = centerCubeK - 7; k <= centerCubeK + 7; k++)
             {
               if (i >= 0 && i < laserCloudWidth &&
                   j >= 0 && j < laserCloudHeight &&
