@@ -397,20 +397,35 @@ int main(int argc, char **argv)
   }
 
   pcl::io::loadPCDFile("/home/ubuwgb/catkin_ws/offline_map/offmap.pcd", *offline_map);
-  cout << "Offline map loading-------\n"
-       << "points size: " << offline_map->points.size() << endl;
-  for (int i = 0; i < offline_map->points.size(); i++)
+  pcl::io::loadPCDFile("/home/ubuwgb/catkin_ws/offline_map/co.pcd", *laserCloudCo);
+  pcl::io::loadPCDFile("/home/ubuwgb/catkin_ws/offline_map/su.pcd", *laserCloudSu);
+  cout << "Offline map loading-------points size:\n"
+       << offline_map->points.size() << "\t" << laserCloudCo->points.size() << "\t" << laserCloudSu->points.size() << endl;
+  for (int i = 0; i < laserCloudCo->points.size(); i++)
   {
     PointType mappoint;
-    mappoint.x = offline_map->points[i].x;
-    mappoint.y = offline_map->points[i].y;
-    mappoint.z = offline_map->points[i].z;
+    mappoint.x = laserCloudCo->points[i].x;
+    mappoint.y = laserCloudCo->points[i].y;
+    mappoint.z = laserCloudCo->points[i].z;
     int gridi = int((mappoint.x + 25.0) / 50.0) + laserCloudCenWidth;
     int gridj = int((mappoint.y + 25.0) / 50.0) + laserCloudCenHeight;
     int gridk = int((mappoint.z + 25.0) / 50.0) + laserCloudCenDepth;
     // cout << "gridi: " << gridi << "\tgridj: " << gridj << "\tgridk: " << gridk << endl;
-    //int gridInd = gridi + laserCloudWidth * gridj + laserCloudWidth * laserCloudHeight * gridk;
-    //laserCloudSurfArray[cubeInd]->push_back(pointSel);
+    int gridInd = gridi + laserCloudWidth * gridj + laserCloudWidth * laserCloudHeight * gridk;
+    laserCloudCornerArray[gridInd]->push_back(mappoint);
+  }
+  for (int i = 0; i < laserCloudSu->points.size(); i++)
+  {
+    PointType mappoint;
+    mappoint.x = laserCloudSu->points[i].x;
+    mappoint.y = laserCloudSu->points[i].y;
+    mappoint.z = laserCloudSu->points[i].z;
+    int gridi = int((mappoint.x + 25.0) / 50.0) + laserCloudCenWidth;
+    int gridj = int((mappoint.y + 25.0) / 50.0) + laserCloudCenHeight;
+    int gridk = int((mappoint.z + 25.0) / 50.0) + laserCloudCenDepth;
+    // cout << "gridi: " << gridi << "\tgridj: " << gridj << "\tgridk: " << gridk << endl;
+    int gridInd = gridi + laserCloudWidth * gridj + laserCloudWidth * laserCloudHeight * gridk;
+    laserCloudSurfArray[gridInd]->push_back(mappoint);
   }
 
   int frameCount = stackFrameNum - 1;  // 0
@@ -1088,7 +1103,7 @@ int main(int argc, char **argv)
         }
 
         // 将边缘特征点按距离（比例尺缩小）归入相应的立方体
-        for (int i = 0; i < laserCloudCornerStackNum; i++)
+        /*for (int i = 0; i < laserCloudCornerStackNum; i++)
         {
           pointAssociateToMap(&laserCloudCornerStack->points[i], &pointSel);
 
@@ -1135,7 +1150,7 @@ int main(int argc, char **argv)
             int cubeInd = cubeI + laserCloudWidth * cubeJ + laserCloudWidth * laserCloudHeight * cubeK;
             laserCloudSurfArray[cubeInd]->push_back(pointSel);
           }
-        }
+        }*/
 
         for (int i = 0; i < laserCloudValidNum; i++)
         {
@@ -1164,37 +1179,37 @@ int main(int argc, char **argv)
           mapFrameCount = 0;
 
           laserCloudSurround2->clear();
-          laserCloudCo2->clear();//
-          laserCloudSu2->clear();//
+          // laserCloudCo2->clear();//
+          // laserCloudSu2->clear();//
           for (int i = 0; i < laserCloudSurroundNum; i++)
           {
             int ind = laserCloudSurroundInd[i];
             *laserCloudSurround2 += *laserCloudCornerArray[ind];
             *laserCloudSurround2 += *laserCloudSurfArray[ind];
-            *laserCloudCo2 += *laserCloudCornerArray[ind];//
-            *laserCloudSu2 += *laserCloudSurfArray[ind];//
+            // *laserCloudCo2 += *laserCloudCornerArray[ind];//
+            // *laserCloudSu2 += *laserCloudSurfArray[ind];//
           }
 
           laserCloudSurround->clear();
           downSizeFilterCorner.setInputCloud(laserCloudSurround2);
           downSizeFilterCorner.filter(*laserCloudSurround);
 
-          laserCloudCo->clear();//
-          downSizeFilterCorner.setInputCloud(laserCloudCo2);
-          downSizeFilterCorner.filter(*laserCloudCo);
-          laserCloudSu->clear();
-          downSizeFilterCorner.setInputCloud(laserCloudSu2);
-          downSizeFilterCorner.filter(*laserCloudSu);
+          // laserCloudCo->clear();//
+          // downSizeFilterCorner.setInputCloud(laserCloudCo2);
+          // downSizeFilterCorner.filter(*laserCloudCo);
+          // laserCloudSu->clear();
+          // downSizeFilterCorner.setInputCloud(laserCloudSu2);
+          // downSizeFilterCorner.filter(*laserCloudSu);
 
-          sensor_msgs::PointCloud2 laserCloudCo3,laserCloudSu3;
-          pcl::toROSMsg(*laserCloudCo, laserCloudCo3);
-          laserCloudCo3.header.stamp = ros::Time().fromSec(timeLaserOdometry);
-          laserCloudCo3.header.frame_id = "/camera_init";
-          pubLaserCloudCo.publish(laserCloudCo3);
-          pcl::toROSMsg(*laserCloudSu, laserCloudSu3);
-          laserCloudSu3.header.stamp = ros::Time().fromSec(timeLaserOdometry);
-          laserCloudSu3.header.frame_id = "/camera_init";
-          pubLaserCloudSu.publish(laserCloudSu3);
+          // sensor_msgs::PointCloud2 laserCloudCo3,laserCloudSu3;
+          // pcl::toROSMsg(*laserCloudCo, laserCloudCo3);
+          // laserCloudCo3.header.stamp = ros::Time().fromSec(timeLaserOdometry);
+          // laserCloudCo3.header.frame_id = "/camera_init";
+          // pubLaserCloudCo.publish(laserCloudCo3);
+          // pcl::toROSMsg(*laserCloudSu, laserCloudSu3);
+          // laserCloudSu3.header.stamp = ros::Time().fromSec(timeLaserOdometry);
+          // laserCloudSu3.header.frame_id = "/camera_init";
+          // pubLaserCloudSu.publish(laserCloudSu3);
 
           sensor_msgs::PointCloud2 laserCloudSurround3;
           pcl::toROSMsg(*laserCloudSurround, laserCloudSurround3);
