@@ -33,6 +33,8 @@
 #include <cmath>
 
 #include <pcl/point_types.h>
+using std::cout;
+using std::endl;
 
 typedef pcl::PointXYZI PointType;
 

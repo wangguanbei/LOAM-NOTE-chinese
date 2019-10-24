@@ -89,6 +89,11 @@ pcl::PointCloud<PointType>::Ptr laserCloudCornerArray[laserCloudNum];
 pcl::PointCloud<PointType>::Ptr laserCloudSurfArray[laserCloudNum];
 pcl::PointCloud<PointType>::Ptr laserCloudCornerArray2[laserCloudNum];
 pcl::PointCloud<PointType>::Ptr laserCloudSurfArray2[laserCloudNum];
+pcl::PointCloud<PointType>::Ptr offline_map(new pcl::PointCloud<PointType>());
+pcl::PointCloud<PointType>::Ptr laserCloudCo2(new pcl::PointCloud<PointType>());
+pcl::PointCloud<PointType>::Ptr laserCloudSu2(new pcl::PointCloud<PointType>());
+pcl::PointCloud<PointType>::Ptr laserCloudCo(new pcl::PointCloud<PointType>());
+pcl::PointCloud<PointType>::Ptr laserCloudSu(new pcl::PointCloud<PointType>());
 
 pcl::KdTreeFLANN<PointType>::Ptr kdtreeCornerFromMap(new pcl::KdTreeFLANN<PointType>());
 pcl::KdTreeFLANN<PointType>::Ptr kdtreeSurfFromMap(new pcl::KdTreeFLANN<PointType>());
@@ -342,6 +347,8 @@ int main(int argc, char **argv)
   ros::Subscriber subImu = nh.subscribe<sensor_msgs::Imu>("/imu/data", 50, imuHandler);
 
   ros::Publisher pubLaserCloudSurround = nh.advertise<sensor_msgs::PointCloud2>("/laser_cloud_surround", 1);
+  ros::Publisher pubLaserCloudCo = nh.advertise<sensor_msgs::PointCloud2>("/laser_cloud_su", 1);
+  ros::Publisher pubLaserCloudSu = nh.advertise<sensor_msgs::PointCloud2>("/laser_cloud_co", 1);
 
   ros::Publisher pubLaserCloudFullRes = nh.advertise<sensor_msgs::PointCloud2>("/velodyne_cloud_registered", 2);
 
@@ -387,6 +394,23 @@ int main(int argc, char **argv)
     laserCloudSurfArray[i].reset(new pcl::PointCloud<PointType>());
     laserCloudCornerArray2[i].reset(new pcl::PointCloud<PointType>());
     laserCloudSurfArray2[i].reset(new pcl::PointCloud<PointType>());
+  }
+
+  pcl::io::loadPCDFile("/home/ubuwgb/catkin_ws/offline_map/offmap.pcd", *offline_map);
+  cout << "Offline map loading-------\n"
+       << "points size: " << offline_map->points.size() << endl;
+  for (int i = 0; i < offline_map->points.size(); i++)
+  {
+    PointType mappoint;
+    mappoint.x = offline_map->points[i].x;
+    mappoint.y = offline_map->points[i].y;
+    mappoint.z = offline_map->points[i].z;
+    int gridi = int((mappoint.x + 25.0) / 50.0) + laserCloudCenWidth;
+    int gridj = int((mappoint.y + 25.0) / 50.0) + laserCloudCenHeight;
+    int gridk = int((mappoint.z + 25.0) / 50.0) + laserCloudCenDepth;
+    // cout << "gridi: " << gridi << "\tgridj: " << gridj << "\tgridk: " << gridk << endl;
+    //int gridInd = gridi + laserCloudWidth * gridj + laserCloudWidth * laserCloudHeight * gridk;
+    //laserCloudSurfArray[cubeInd]->push_back(pointSel);
   }
 
   int frameCount = stackFrameNum - 1;  // 0
@@ -1140,16 +1164,37 @@ int main(int argc, char **argv)
           mapFrameCount = 0;
 
           laserCloudSurround2->clear();
+          laserCloudCo2->clear();//
+          laserCloudSu2->clear();//
           for (int i = 0; i < laserCloudSurroundNum; i++)
           {
             int ind = laserCloudSurroundInd[i];
             *laserCloudSurround2 += *laserCloudCornerArray[ind];
             *laserCloudSurround2 += *laserCloudSurfArray[ind];
+            *laserCloudCo2 += *laserCloudCornerArray[ind];//
+            *laserCloudSu2 += *laserCloudSurfArray[ind];//
           }
 
           laserCloudSurround->clear();
           downSizeFilterCorner.setInputCloud(laserCloudSurround2);
           downSizeFilterCorner.filter(*laserCloudSurround);
+
+          laserCloudCo->clear();//
+          downSizeFilterCorner.setInputCloud(laserCloudCo2);
+          downSizeFilterCorner.filter(*laserCloudCo);
+          laserCloudSu->clear();
+          downSizeFilterCorner.setInputCloud(laserCloudSu2);
+          downSizeFilterCorner.filter(*laserCloudSu);
+
+          sensor_msgs::PointCloud2 laserCloudCo3,laserCloudSu3;
+          pcl::toROSMsg(*laserCloudCo, laserCloudCo3);
+          laserCloudCo3.header.stamp = ros::Time().fromSec(timeLaserOdometry);
+          laserCloudCo3.header.frame_id = "/camera_init";
+          pubLaserCloudCo.publish(laserCloudCo3);
+          pcl::toROSMsg(*laserCloudSu, laserCloudSu3);
+          laserCloudSu3.header.stamp = ros::Time().fromSec(timeLaserOdometry);
+          laserCloudSu3.header.frame_id = "/camera_init";
+          pubLaserCloudSu.publish(laserCloudSu3);
 
           sensor_msgs::PointCloud2 laserCloudSurround3;
           pcl::toROSMsg(*laserCloudSurround, laserCloudSurround3);
