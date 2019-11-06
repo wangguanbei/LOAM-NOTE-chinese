@@ -31,6 +31,7 @@
 //     Robotics: Science and Systems Conference (RSS). Berkeley, CA, July 2014.
 
 #include <math.h>
+#include <iomanip>
 
 #include <loam_velodyne/common.h>
 #include <nav_msgs/Odometry.h>
@@ -45,6 +46,8 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <tf/transform_datatypes.h>
 #include <tf/transform_broadcaster.h>
+
+using std::setprecision;
 
 const float scanPeriod = 0.1; // 扫描周期
 
@@ -396,6 +399,8 @@ int main(int argc, char **argv)
     laserCloudSurfArray2[i].reset(new pcl::PointCloud<PointType>());
   }
 
+  // load the offline map
+
   pcl::io::loadPCDFile("/home/ubuwgb/catkin_ws/offline_map/offmap.pcd", *offline_map);
   pcl::io::loadPCDFile("/home/ubuwgb/catkin_ws/offline_map/co.pcd", *laserCloudCo);
   pcl::io::loadPCDFile("/home/ubuwgb/catkin_ws/offline_map/su.pcd", *laserCloudSu);
@@ -427,6 +432,62 @@ int main(int argc, char **argv)
     int gridInd = gridi + laserCloudWidth * gridj + laserCloudWidth * laserCloudHeight * gridk;
     laserCloudSurfArray[gridInd]->push_back(mappoint);
   }
+
+  // finish: load the offline map
+
+  // load the present position by GPS file
+  double lon, lat, difflon, difflat, a, b, slamx, slamy;
+  cv::FileStorage fs("/home/ubuwgb/catkin_ws/src/loam_wgb/param.yaml", cv::FileStorage::READ);
+  if (!fs.isOpened())
+  {
+    perror("LaserMapping load GPS failed. <param.yaml> does not exist!!!");
+    exit(EXIT_FAILURE);
+  }
+  fs["longitude"] >> lon;
+  fs["latitude"] >> lat;
+  fs.release();
+
+  difflon = lon - 121.208357070385;
+  difflat = lat - 31.2914135770775;
+  cv::Mat matparam(2, 2, CV_64F, cv::Scalar::all(0));
+  cv::Mat matab(2, 1, CV_64F, cv::Scalar::all(0));
+  cv::Mat matright(2, 1, CV_64F, cv::Scalar::all(0));
+  matparam.at<double>(0, 0) = -0.000068849907;
+  matparam.at<double>(0, 1) = 0.000045408423;
+  matparam.at<double>(1, 0) = -0.0000686578126;
+  matparam.at<double>(1, 1) = -0.0000406812586;
+  matright.at<double>(0, 0) = difflon;
+  matright.at<double>(1, 0) = difflat;
+  // -0.000068849907 * a + 0.000045408423 * b = difflon;
+  // -0.0000686578126 * a - 0.0000406812586 * b = difflat;
+  cout << "lon: " << lon << "\tlat: " << lat << endl;
+  cout << "difflon: " << setprecision(20) << difflon << "\tdifflat: " << setprecision(20) << difflat << endl;
+  cv::solve(matparam, matright, matab, cv::DECOMP_LU);
+  cout << "a: " << matab.at<double>(0, 0) << "\tb: " << matab.at<double>(1, 0) << endl;
+  a = matab.at<double>(0, 0);
+  b = matab.at<double>(1, 0);
+
+  matparam.at<double>(0, 0) = 15.25596566;
+  matparam.at<double>(0, 1) = -1;
+  matparam.at<double>(1, 0) = -1;
+  matparam.at<double>(1, 1) = 36.50654549;
+  matright.at<double>(0, 0) = 156.172065 * a;
+  matright.at<double>(1, 0) = 202.1535231 * b;
+  // 15.25596566 * x - y = 156.172065*a;
+  // -x + 36.50654549 * y = 202.1535231*b;
+  cv::solve(matparam, matright, matab, cv::DECOMP_LU);
+  cout << "slamx: " << matab.at<double>(0, 0) << "\tslamy: " << matab.at<double>(1, 0) << endl;
+  slamx = matab.at<double>(0, 0);
+  slamy = matab.at<double>(1, 0);
+
+  // transformTobeMapped[0] += matX.at<float>(0, 0);
+  // transformTobeMapped[1] += matX.at<float>(1, 0);
+  // transformTobeMapped[2] += matX.at<float>(2, 0);
+  // transformTobeMapped[3] += matX.at<float>(3, 0);
+  // transformTobeMapped[4] += matX.at<float>(4, 0);
+  // transformTobeMapped[5] += matX.at<float>(5, 0);
+
+  // finish: load the present position by GPS file
 
   int frameCount = stackFrameNum - 1;  // 0
   int mapFrameCount = mapFrameNum - 1; // 4
