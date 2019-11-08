@@ -1,8 +1,8 @@
 %YAML:1.0
-lidar_yaw:[10]
-lidar_roll:[0]
-lidar_pitch:[0]
-lidar_translation_x:[-0.65]
-lidar_translation_y:[0.7]
+lidar_yaw:10
+lidar_roll:0
+lidar_pitch:0
+lidar_translation_x:-0.65
+lidar_translation_y:0.7
 portnum:[6699,6688]
 

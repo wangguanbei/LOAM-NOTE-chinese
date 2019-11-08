@@ -259,7 +259,7 @@ void laserCloudHandler(const sensor_msgs::PointCloud2ConstPtr& laserCloudMsg)
   std::vector<pcl::PointCloud<PointType> > laserCloudScans(N_SCANS);	// 创建16个点云容器
 
   double pitch, yaw, roll, tx, ty;
-  cv::FileStorage fs("../param.yaml", cv::FileStorage::READ);
+  cv::FileStorage fs("/home/ubuwgb/catkin_ws/src/loam_wgb/param.yaml", cv::FileStorage::READ);
   if (!fs.isOpened())
   {
     perror("scan registration load params failed. param.yaml does not exist!!!");
