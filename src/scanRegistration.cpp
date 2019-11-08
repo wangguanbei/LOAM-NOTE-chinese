@@ -271,6 +271,9 @@ void laserCloudHandler(const sensor_msgs::PointCloud2ConstPtr& laserCloudMsg)
   fs["lidar_translation_x"] >> tx;
   fs["lidar_translation_y"] >> ty;
   fs.release();
+  yaw = yaw / 180 * M_PI;
+  roll = roll / 180 * M_PI;
+  pitch = pitch / 180 * M_PI;
 
   for (int i = 0; i < cloudSize; i++) {	// 遍历laserCloudIn点
     point.x = laserCloudIn.points[i].y;

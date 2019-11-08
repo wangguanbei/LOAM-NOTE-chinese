@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "array": "cpp",
+        "iomanip": "cpp",
+        "cmath": "cpp",
+        "complex": "cpp"
+    }
+}
